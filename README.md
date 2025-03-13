@@ -8,6 +8,9 @@ This server manager was made by an _inexperienced_ developer, so feel free to re
 This is not the _final_ version of this PZ server manager; I am just starting. 
 Found a bug? Try fixing the code yourself or put it on the "_Issues_" page so I can look it up when I have some time.
 
+-Project Zomboid Dedicated Server
+-Simple Project Zomboid server manager
+
 ## Dashboard:
 
 ![PZ Manager Dashboard](https://i.imgur.com/4vjzfT8.png)
