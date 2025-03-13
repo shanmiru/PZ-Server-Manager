@@ -19,6 +19,7 @@ Found a bug? Try fixing the code yourself or put it on the "_Issues_" page so I 
 ![PZ manager SampleCard](https://i.imgur.com/5e93Pff.png)
 
 ## Overview
+Project Zomboid Linux/Ubuntu Server Manager (shanmiru) a dashboard for manage Project Zomboid server on Linux/Ubuntu.
 
 Tempest PZ Manager is a full-featured web interface for creating, managing, and monitoring Project Zomboid dedicated servers. Built with Flask and Bootstrap, it provides an intuitive, responsive dashboard that simplifies server administration tasks.
 
