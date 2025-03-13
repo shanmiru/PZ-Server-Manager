@@ -81,3 +81,11 @@ pip install -r req.txt
 # Run the application
 python3 app.py or python app.py
 ```
+
+## Support the Project
+If you find this project helpful and want to show your appreciation, you can support me through PayPal
+
+![Paypal](https://i.imgur.com/l04Zf8p.png)
+
+Donation Email: ``yieshaforstirling@gmail.com`` or ``paypal.me/dazaikun45``
+Your support helps me continue developing and improving this project. Every contribution, no matter how small, is greatly appreciated! 🙏
