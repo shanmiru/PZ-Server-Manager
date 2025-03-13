@@ -69,7 +69,7 @@ apt install python3-pip -y
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tempest-pz-manager.git
+git clone https://github.com/shanmiru/tempest-pz-manager.git
 cd tempest-pz-manager
 
 # Install dependencies
