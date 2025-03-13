@@ -59,6 +59,9 @@ Tempest PZ Manager is a full-featured web interface for creating, managing, and 
 - Flask and dependencies (see requirements.txt)
 - AWS CLI (for backup functionality)
 
+## Must Read!!
+- I tested this on Ubuntu 22.04 and perfectly fine.
+
 ## Installation
 
 **Must do first**:
@@ -76,5 +79,5 @@ cd PZ-Server-Manager
 pip install -r req.txt
 
 # Run the application
-python app.py
+python3 app.py or python app.py
 ```
