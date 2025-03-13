@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempest PZ Manager - File Manager {{ server.name }}</title>
+    <link rel="icon" href="{{ get_secure_image_url('server_logo') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <style>
+        .file-explorer {
+            height: calc(100vh - 200px);
+            min-height: 450px;
+            overflow-y: auto;
+            border: 1px solid #2f3542;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+        }
+
+        .file-item,
+        .folder-item {
+            cursor: pointer;
+            border-radius: 4px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+
+        .file-item:hover,
+        .folder-item:hover {
+            background-color: rgba(108, 92, 231, 0.2);
+            border-color: rgba(108, 92, 231, 0.3);
+        }
+
+        .file-item.active,
+        .folder-item.active {
+            background-color: rgba(108, 92, 231, 0.3);
+            border-color: rgba(108, 92, 231, 0.5);
+        }
+
+        .folder-item {
+            color: #fdcb6e;
+        }
+
+        .file-item {
+            color: #c8d6e5;
+        }
+
+        .editor-container {
+            height: calc(100vh - 200px);
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #2f3542;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.2);
+            overflow: auto;
+            /* Changed from 'hidden' to 'auto' */
+        }
+
+        #file-editor {
+            display: none;
+            /* Hide the original textarea */
+        }
+
+        .CodeMirror {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            height: 100% !important;
+            border: none;
+            border-radius: 0;
+        }
+
+        .breadcrumb-path {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+            overflow-x: auto;
+            border: 1px solid #2f3542;
+        }
+
+        .breadcrumb-path a {
+            color: #6c5ce7;
+            text-decoration: none;
+        }
+
+        .breadcrumb-path a:hover {
+            text-decoration: underline;
+        }
+
+        .upload-area {
+            border: 2px dashed #2f3542;
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s;
+            background-color: rgba(0, 0, 0, 0.2);
+            margin-top: 10px;
+        }
+
+        .upload-area.drag-over {
+            border-color: #6c5ce7;
+            background-color: rgba(108, 92, 231, 0.15);
+        }
+
+        .file-actions {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .activity-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #2f3542;
+            margin-top: 0;
+        }
+
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            max-width: 500px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* File type icons */
+        .file-icon {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        #editor-placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+
+        #context-menu {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: 1px solid #2f3542;
+        }
+
+        #context-menu .dropdown-item:hover {
+            background-color: rgba(108, 92, 231, 0.2);
+        }
+
+        .card-body {
+            height: 100%;
+        }
+
+        @media (max-width: 768px) {
+
+            .file-explorer,
+            .editor-container {
+                height: 400px;
+                min-height: 400px;
+            }
+        }
+
+        .file-txt .file-icon,
+        .file-log .file-icon {
+            color: #74b9ff;
+        }
+
+        .file-lua .file-icon {
+            color: #0984e3;
+        }
+
+        .file-ini .file-icon,
+        .file-conf .file-icon {
+            color: #a29bfe;
+        }
+
+        .file-zip .file-icon,
+        .file-gz .file-icon {
+            color: #fdcb6e;
+        }
+
+        .file-jpg .file-icon,
+        .file-png .file-icon,
+        .file-gif .file-icon {
+            color: #ff7675;
+        }
+
+        .file-exe .file-icon,
+        .file-sh .file-icon {
+            color: #55efc4;
+        }
+
+        /* Loading spinner overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1060;
+            flex-direction: column;
+        }
+
+        .loading-overlay .spinner-border {
+            width: 4rem;
+            height: 4rem;
+        }
+
+        .card {
+            border: 1px solid #2f3542;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #2f3542;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-hdd-network me-2"></i>Tempest PZ Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('users') }}">
+                            <i class="bi bi-people me-1"></i> Manage Users
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('server_control', server_name=server.name) }}">{{
+                        server.name }}</a></li>
+                <li class="breadcrumb-item active">File Manager</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-folder me-2"></i>File Manager for {{ server.name }}
+                </h5>
+                <span class="badge bg-{{ 'success' if server.status == 'running' else 'danger' }}">
+                    <span class="server-status-indicator status-{{ server.status }}"></span>
+                    {{ server.status }}
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Current Path Display -->
+                <div class="breadcrumb-path" id="current-path">
+                    <i class="bi bi-hdd-rack me-2"></i>/home/{{ server.name }}/
+                </div>
+
+                <div class="row">
+                    <!-- Left sidebar - File/Folder Explorer -->
+                    <div class="col-md-4">
+                        <div class="card mb-3">
+                            <div class="card-header bg-dark">
+                                <h6 class="mb-2">Directory</h6>
+                                <div class="d-flex justify-content-start mt-2">
+                                    <button class="btn btn-sm btn-outline-light me-1" id="btn-search-files">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light me-1" id="btn-refresh-files">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light me-1" id="btn-upload-files">
+                                        <i class="bi bi-cloud-upload"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" id="btn-new-folder">
+                                        <i class="bi bi-folder-plus"></i>
+                                    </button>
+
+                                    <button class="btn btn-sm btn-outline-success" id="btn-terminal">
+                                        <i class="bi bi-terminal"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="file-explorer" id="file-explorer">
+                                    <div class="p-3 text-center" id="file-loading">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2">Loading files...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Area -->
+                        <div style="display: none;">
+                            <div class="card">
+                                <div class="card-header bg-dark">
+                                    <h6 class="mb-0">Upload Files</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="upload-area" id="upload-area">
+                                        <i class="bi bi-cloud-upload fs-2 mb-3 text-primary"></i>
+                                        <p>Drag and drop files here<br>or</p>
+                                        <input type="file" id="file-upload" class="d-none" multiple>
+                                        <button class="btn btn-primary" id="btn-browse-files">
+                                            <i class="bi bi-file-earmark-plus me-2"></i>Browse Files
+                                        </button>
+                                    </div>
+                                    <div class="progress mt-3 d-none" id="upload-progress-container">
+                                        <div class="progress-bar bg-primary" id="upload-progress" role="progressbar"
+                                            style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                            0%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right side - File Content/Editor -->
+                    <div class="col-md-8">
+                        <div class="card mb-3">
+                            <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0" id="editor-title">File Editor</h6>
+                                <div class="btn-group" id="editor-actions" style="display: none;">
+                                    <button class="btn btn-sm btn-outline-success me-2" id="btn-save-file">
+                                        <i class="bi bi-save me-1"></i>Save
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger me-2" id="btn-delete-file">
+                                        <i class="bi bi-trash me-1"></i>Delete
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" id="btn-download-file">
+                                        <i class="bi bi-download me-1"></i>Download
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="editor-container">
+                                    <div class="p-3 text-center" id="editor-placeholder">
+                                        <i class="bi bi-file-earmark-text fs-1 mb-3 text-muted"></i>
+                                        <p>Select a file to edit<br>or<br>Create a new file</p>
+                                        <button class="btn btn-primary" id="btn-new-file">
+                                            <i class="bi bi-file-earmark-plus me-2"></i>New File
+                                        </button>
+                                    </div>
+                                    <div class="p-0" id="editor-container" style="display: none;">
+                                        <textarea id="file-editor" spellcheck="false"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Activity Log -->
+                    <div class="card">
+                        <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Activity Log</h6>
+                            <button class="btn btn-sm btn-outline-light" id="btn-clear-log">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="activity-log" id="activity-log">
+                                <div class="p-2">
+                                    <span class="text-muted">[{{ server.created_at }}]</span> File manager
+                                    initialized for server {{ server.name }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Terminal Modal -->
+    <div class="modal fade" id="terminalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="bi bi-terminal me-2 text-success"></i>Server Terminal - {{ server.name }}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="terminal-container" style="height: 500px; background-color: #000;">
+                        <iframe id="terminal-iframe" style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-primary" id="btn-reconnect-terminal">
+                        <i class="bi bi-arrow-repeat me-2"></i>Reconnect
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Search Modal -->
+    <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="bi bi-search me-2 text-primary"></i>Search Files and Folders
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="search-term" placeholder="Enter search term...">
+                        <button class="btn btn-primary" type="button" id="btn-execute-search">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="search-case-sensitive">
+                        <label class="form-check-label" for="search-case-sensitive">
+                            Case sensitive
+                        </label>
+                    </div>
+                    <div id="search-status" class="mb-3 text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Searching...</span>
+                        </div>
+                        <p class="mt-2">Searching files and folders...</p>
+                    </div>
+                    <div id="search-results" class="mt-3">
+                        <!-- Search results will be displayed here -->
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-danger me-auto" id="btn-clear-search">
+                        <i class="bi bi-trash me-1"></i>Clear Results
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- New Folder Modal -->
+    <div class="modal fade" id="newFolderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="bi bi-folder-plus me-2 text-warning"></i>Create New Folder
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new-folder-name" class="form-label">Folder Name</label>
+                        <input type="text" class="form-control" id="new-folder-name" placeholder="Enter folder name">
+                    </div>
+                    <p class="text-muted">The folder will be created in the current directory.</p>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="confirmNewFolderBtn">
+                        <i class="bi bi-folder-plus me-2"></i>Create Folder
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New File Modal -->
+    <div class="modal fade" id="newFileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-earmark-plus me-2 text-info"></i>Create New File
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="new-file-name" class="form-label">File Name</label>
+                        <input type="text" class="form-control" id="new-file-name" placeholder="Enter file name">
+                    </div>
+                    <p class="text-muted">The file will be created in the current directory.</p>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" id="confirmNewFileBtn">
+                        <i class="bi bi-file-earmark-plus me-2"></i>Create File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Files Modal -->
+    <div class="modal fade" id="uploadFilesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="bi bi-cloud-upload me-2 text-primary"></i>Upload Files
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Current path: <code id="upload-current-path"></code></p>
+
+                    <div class="upload-area" id="modal-upload-area">
+                        <i class="bi bi-cloud-upload fs-2 mb-3 text-primary"></i>
+                        <p>Drag and drop files here<br>or</p>
+                        <input type="file" id="modal-file-upload" class="d-none" multiple>
+                        <button class="btn btn-primary" id="btn-modal-browse-files">
+                            <i class="bi bi-file-earmark-plus me-2"></i>Browse Files
+                        </button>
+                    </div>
+                    <div class="progress mt-3 d-none" id="modal-upload-progress-container">
+                        <div class="progress-bar bg-primary" id="modal-upload-progress" role="progressbar"
+                            style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong id="delete-item-name">this item</strong>?</p>
+                    <p class="text-danger"><strong>Warning:</strong> This action cannot be undone!</p>
+                    <input type="hidden" id="delete-item-path">
+                    <input type="hidden" id="delete-item-type">
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h5 class="text-light" id="loading-message">Processing...</h5>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- CodeMirror JS files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/lua/lua.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/properties/properties.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/shell/shell.min.js"></script>
+    <script>
+        const serverName = "{{ server.name }}";
+        let currentPath = "/home/{{ server.name }}/";
+        let currentFile = null;
+        let fileContentModified = false;
+        let editor = null; // CodeMirror editor instance
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize file explorer
+            loadFileExplorer(currentPath);
+
+            // Initialize CodeMirror on the textarea
+            const fileEditorElement = document.getElementById('file-editor');
+            editor = CodeMirror.fromTextArea(fileEditorElement, {
+                lineNumbers: true,
+                theme: 'dracula',
+                mode: 'text/plain',
+                indentUnit: 4,
+                smartIndent: true,
+                indentWithTabs: false,
+                lineWrapping: true,
+                extraKeys: { "Tab": "insertSoftTab" },
+                matchBrackets: true,
+                autoRefresh: true
+            });
+
+            // Track modifications
+            editor.on('change', function () {
+                fileContentModified = true;
+            });
+
+            // Set up event listeners
+            document.getElementById('btn-refresh-files').addEventListener('click', function () {
+                loadFileExplorer(currentPath);
+            });
+
+            document.getElementById('btn-new-folder').addEventListener('click', function () {
+                const modal = new bootstrap.Modal(document.getElementById('newFolderModal'));
+                modal.show();
+            });
+
+            document.getElementById('btn-new-file').addEventListener('click', function () {
+                const modal = new bootstrap.Modal(document.getElementById('newFileModal'));
+                modal.show();
+            });
+
+            document.getElementById('btn-save-file').addEventListener('click', function () {
+                saveCurrentFile();
+            });
+
+            document.getElementById('btn-delete-file').addEventListener('click', function () {
+                if (currentFile) {
+                    showDeleteConfirmation(currentFile, 'file');
+                }
+            });
+
+            document.getElementById('btn-download-file').addEventListener('click', function () {
+                if (currentFile) {
+                    downloadFile(currentFile);
+                }
+            });
+
+            document.getElementById('confirmNewFolderBtn').addEventListener('click', function () {
+                const folderName = document.getElementById('new-folder-name').value.trim();
+                if (folderName) {
+                    createNewFolder(folderName);
+                    bootstrap.Modal.getInstance(document.getElementById('newFolderModal')).hide();
+                }
+            });
+
+            document.getElementById('confirmNewFileBtn').addEventListener('click', function () {
+                const fileName = document.getElementById('new-file-name').value.trim();
+                if (fileName) {
+                    createNewFile(fileName);
+                    bootstrap.Modal.getInstance(document.getElementById('newFileModal')).hide();
+                }
+            });
+
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function () {
+                const itemPath = document.getElementById('delete-item-path').value;
+                const itemType = document.getElementById('delete-item-type').value;
+
+                if (itemPath) {
+                    deleteItem(itemPath, itemType);
+                    bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+                }
+            });
+
+            document.getElementById('btn-clear-log').addEventListener('click', function () {
+                clearActivityLog();
+            });
+
+            // Setup drag and drop for file uploads
+            const uploadArea = document.getElementById('upload-area');
+            const fileUpload = document.getElementById('file-upload');
+
+            document.getElementById('btn-browse-files').addEventListener('click', function () {
+                fileUpload.click();
+            });
+
+            fileUpload.addEventListener('change', function () {
+                if (this.files.length > 0) {
+                    uploadFiles(this.files);
+                }
+            });
+
+            uploadArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            });
+
+            uploadArea.addEventListener('dragleave', function () {
+                this.classList.remove('drag-over');
+            });
+
+            uploadArea.addEventListener('drop', function (e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+
+                if (e.dataTransfer.files.length > 0) {
+                    uploadFiles(e.dataTransfer.files);
+                }
+            });
+
+            // NEW: Upload button in the directory header
+            document.getElementById('btn-upload-files').addEventListener('click', function () {
+                // Set the current path in the modal
+                document.getElementById('upload-current-path').textContent = currentPath;
+
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('uploadFilesModal'));
+                modal.show();
+            });
+
+            // NEW: Browse button in the modal
+            document.getElementById('btn-modal-browse-files').addEventListener('click', function () {
+                document.getElementById('modal-file-upload').click();
+            });
+
+            // NEW: File selection in the modal
+            document.getElementById('modal-file-upload').addEventListener('change', function () {
+                if (this.files.length > 0) {
+                    uploadModalFiles(this.files);
+                }
+            });
+
+            // NEW: Drag and drop in the modal
+            const modalUploadArea = document.getElementById('modal-upload-area');
+
+            modalUploadArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            });
+
+            modalUploadArea.addEventListener('dragleave', function () {
+                this.classList.remove('drag-over');
+            });
+
+            modalUploadArea.addEventListener('drop', function (e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+
+                if (e.dataTransfer.files.length > 0) {
+                    uploadModalFiles(e.dataTransfer.files);
+                }
+            });
+
+            // Handle browser back/forward and beforeunload
+            window.addEventListener('beforeunload', function (e) {
+                if (fileContentModified) {
+                    const confirmationMessage = 'You have unsaved changes. Are you sure you want to leave?';
+                    e.returnValue = confirmationMessage;
+                    return confirmationMessage;
+                }
+            });
+        });
+
+        // NEW: Function to handle file uploads from the modal
+        function uploadModalFiles(files) {
+            if (files.length === 0) return;
+
+            const progressContainer = document.getElementById('modal-upload-progress-container');
+            const progressBar = document.getElementById('modal-upload-progress');
+
+            // Show progress
+            progressContainer.classList.remove('d-none');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+
+            // Create a FormData object to hold the files
+            const formData = new FormData();
+            formData.append('path', currentPath);
+
+            // Add all files to the FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            // Upload the files
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', `/api/server/${serverName}/upload`, true);
+
+            // Track upload progress
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percentComplete + '%';
+                    progressBar.textContent = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+
+                        if (response.success) {
+                            showNotification(`${files.length} file(s) uploaded successfully`, 'success');
+                            logActivity(`Uploaded ${files.length} file(s) to ${currentPath}`);
+                            loadFileExplorer(currentPath);
+
+                            // Close the modal after a successful upload
+                            setTimeout(() => {
+                                bootstrap.Modal.getInstance(document.getElementById('uploadFilesModal')).hide();
+                                progressContainer.classList.add('d-none');
+                            }, 1500);
+                        } else {
+                            showNotification(response.message || 'Upload failed', 'danger');
+                            logActivity(`Error uploading files: ${response.message}`, 'error');
+                        }
+                    } catch (error) {
+                        showNotification('Error processing server response', 'danger');
+                        logActivity('Error processing server response', 'error');
+                    }
+                } else {
+                    showNotification(`Upload failed: Server returned ${xhr.status}`, 'danger');
+                    logActivity(`Upload failed: Server returned ${xhr.status}`, 'error');
+                }
+
+                // Hide progress after a delay if the modal is still open
+                setTimeout(() => {
+                    progressContainer.classList.add('d-none');
+                }, 3000);
+            };
+
+            xhr.onerror = function () {
+                showNotification('Upload failed: Network error', 'danger');
+                logActivity('Upload failed: Network error', 'error');
+                progressContainer.classList.add('d-none');
+            };
+
+            // Send the form data
+            xhr.send(formData);
+        }
+
+        // Helper function to map file extensions to CodeMirror modes
+        function getEditorMode(extension) {
+            const modeMap = {
+                'lua': 'text/x-lua',
+                'ini': 'text/properties',
+                'conf': 'text/properties',
+                'properties': 'text/properties',
+                'json': 'application/json',
+                'js': 'text/javascript',
+                'html': 'text/html',
+                'xml': 'application/xml',
+                'sh': 'text/x-sh',
+                'bat': 'text/x-sh',
+                'txt': 'text/plain',
+                'log': 'text/plain'
+            };
+
+            return modeMap[extension] || 'text/plain';
+        }
+
+        // File Explorer Functions
+        function loadFileExplorer(path) {
+            const fileExplorer = document.getElementById('file-explorer');
+
+            // Show loading indicator
+            fileExplorer.innerHTML = `
+       <div class="p-3 text-center" id="file-loading">
+           <div class="spinner-border text-primary" role="status">
+               <span class="visually-hidden">Loading...</span>
+           </div>
+           <p class="mt-2">Loading files...</p>
+       </div>
+   `;
+
+            // Update current path display
+            updatePathDisplay(path);
+
+            // Fetch directory contents
+            fetch(`/api/server/${serverName}/files?path=${encodeURIComponent(path)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    fileExplorer.innerHTML = '';
+
+                    if (data.success) {
+                        // Add parent directory if not at root
+                        if (path !== `/home/${serverName}/`) {
+                            const parentDir = document.createElement('div');
+                            parentDir.className = 'folder-item';
+                            parentDir.innerHTML = '<i class="bi bi-arrow-up-circle file-icon"></i> ..';
+                            parentDir.addEventListener('click', function () {
+                                const parentPath = path.split('/').slice(0, -2).join('/') + '/';
+                                loadFileExplorer(parentPath);
+                            });
+                            fileExplorer.appendChild(parentDir);
+                        }
+
+                        // Add folders first
+                        data.contents.folders.forEach(folder => {
+                            const folderItem = document.createElement('div');
+                            folderItem.className = 'folder-item';
+                            folderItem.innerHTML = `<i class="bi bi-folder file-icon"></i> ${folder}`;
+                            folderItem.addEventListener('click', function () {
+                                loadFileExplorer(`${path}${folder}/`);
+                            });
+
+                            // Add context menu for folder
+                            folderItem.addEventListener('contextmenu', function (e) {
+                                e.preventDefault();
+                                showContextMenu(e, `${path}${folder}`, 'folder');
+                            });
+
+                            fileExplorer.appendChild(folderItem);
+                        });
+
+                        // Then add files
+                        data.contents.files.forEach(file => {
+                            const fileItem = document.createElement('div');
+                            fileItem.className = 'file-item';
+
+                            // Determine file type for icon
+                            const fileExtension = getFileExtension(file);
+                            fileItem.classList.add(`file-${fileExtension}`);
+
+                            const fileIcon = getFileIcon(fileExtension);
+                            fileItem.innerHTML = `<i class="bi ${fileIcon} file-icon"></i> ${file}`;
+
+                            fileItem.addEventListener('click', function () {
+                                openFile(`${path}${file}`);
+                            });
+
+                            // Add context menu for file
+                            fileItem.addEventListener('contextmenu', function (e) {
+                                e.preventDefault();
+                                showContextMenu(e, `${path}${file}`, 'file');
+                            });
+
+                            fileExplorer.appendChild(fileItem);
+                        });
+
+                        // If empty directory
+                        if (data.contents.folders.length === 0 && data.contents.files.length === 0) {
+                            const emptyMsg = document.createElement('div');
+                            emptyMsg.className = 'p-3 text-center text-muted';
+                            emptyMsg.innerHTML = '<i class="bi bi-folder2-open mb-2"></i><br>Empty directory';
+                            fileExplorer.appendChild(emptyMsg);
+                        }
+
+                        // Update current path
+                        currentPath = path;
+                        logActivity(`Navigated to ${path}`);
+                    } else {
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'alert alert-danger m-3';
+                        errorMsg.textContent = data.message || 'Failed to load directory contents';
+                        fileExplorer.appendChild(errorMsg);
+                        logActivity(`Error: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    fileExplorer.innerHTML = '';
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'alert alert-danger m-3';
+                    errorMsg.textContent = `Error: ${error.message}`;
+                    fileExplorer.appendChild(errorMsg);
+                    logActivity(`Error: ${error.message}`, 'error');
+                });
+        }
+
+        // Rest of the functions remain unchanged...
+        function updatePathDisplay(path) {
+            const pathDisplay = document.getElementById('current-path');
+            let pathHtml = '<i class="bi bi-hdd-rack me-2"></i>';
+
+            // Split path into segments
+            const segments = path.split('/').filter(segment => segment);
+            let currentPath = '/';
+
+            segments.forEach((segment, index) => {
+                currentPath += segment + '/';
+                pathHtml += `<a href="#" onclick="loadFileExplorer('${currentPath}'); return false;">${segment}</a>/`;
+            });
+
+            pathDisplay.innerHTML = pathHtml;
+        }
+
+        // File Operations
+        function openFile(filePath) {
+            showLoading('Loading file...');
+
+            fetch(`/api/server/${serverName}/file?path=${encodeURIComponent(filePath)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+
+                    if (data.success) {
+                        currentFile = filePath;
+                        fileContentModified = false;
+
+                        // Show editor
+                        document.getElementById('editor-placeholder').style.display = 'none';
+                        document.getElementById('editor-container').style.display = 'block';
+                        document.getElementById('editor-actions').style.display = 'block';
+
+                        // Set editor title
+                        const fileName = filePath.split('/').pop();
+                        document.getElementById('editor-title').innerHTML = `<i class="bi ${getFileIcon(getFileExtension(fileName))} me-2"></i>${fileName}`;
+
+                        // Load content into CodeMirror editor
+                        editor.setValue(data.content);
+
+                        // Set editor mode based on file extension
+                        const fileExtension = getFileExtension(fileName);
+                        const mode = getEditorMode(fileExtension);
+                        editor.setOption('mode', mode);
+
+                        // Refresh editor to ensure proper rendering
+                        setTimeout(() => editor.refresh(), 10);
+
+                        // Log activity
+                        logActivity(`Opened file ${filePath}`);
+                    } else {
+                        showNotification(data.message || 'Failed to load file', 'danger');
+                        logActivity(`Error opening file ${filePath}: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showNotification(`Error: ${error.message}`, 'danger');
+                    logActivity(`Error: ${error.message}`, 'error');
+                });
+        }
+
+
+        function saveCurrentFile() {
+            if (!currentFile) return;
+
+            const content = editor.getValue();
+            showLoading('Saving file...');
+
+            fetch(`/api/server/${serverName}/file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    path: currentFile,
+                    content: content
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+
+                    if (data.success) {
+                        fileContentModified = false;
+                        showNotification('File saved successfully', 'success');
+                        logActivity(`Saved file ${currentFile}`);
+                    } else {
+                        showNotification(data.message || 'Failed to save file', 'danger');
+                        logActivity(`Error saving file ${currentFile}: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showNotification(`Error: ${error.message}`, 'danger');
+                    logActivity(`Error: ${error.message}`, 'error');
+                });
+        }
+
+
+        function createNewFolder(folderName) {
+            const folderPath = `${currentPath}${folderName}`;
+            showLoading('Creating folder...');
+
+            fetch(`/api/server/${serverName}/folder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    path: folderPath
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+
+                    if (data.success) {
+                        loadFileExplorer(currentPath);
+                        showNotification(`Folder "${folderName}" created successfully`, 'success');
+                        logActivity(`Created folder ${folderPath}`);
+                    } else {
+                        showNotification(data.message || 'Failed to create folder', 'danger');
+                        logActivity(`Error creating folder ${folderPath}: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showNotification(`Error: ${error.message}`, 'danger');
+                    logActivity(`Error: ${error.message}`, 'error');
+                });
+        }
+
+
+        function createNewFile(fileName) {
+            const filePath = `${currentPath}${fileName}`;
+            showLoading('Creating file...');
+
+            fetch(`/api/server/${serverName}/file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    path: filePath,
+                    content: ''
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+
+                    if (data.success) {
+                        loadFileExplorer(currentPath);
+                        showNotification(`File "${fileName}" created successfully`, 'success');
+                        logActivity(`Created file ${filePath}`);
+
+                        // Open the new file
+                        openFile(filePath);
+                    } else {
+                        showNotification(data.message || 'Failed to create file', 'danger');
+                        logActivity(`Error creating file ${filePath}: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showNotification(`Error: ${error.message}`, 'danger');
+                    logActivity(`Error: ${error.message}`, 'error');
+                });
+        }
+
+
+        function deleteItem(itemPath, itemType) {
+            showLoading(`Deleting ${itemType}...`);
+
+            fetch(`/api/server/${serverName}/${itemType === 'folder' ? 'folder' : 'file'}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    path: itemPath
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+
+                    if (data.success) {
+                        // If deleting currently open file, reset editor
+                        if (itemType === 'file' && currentFile === itemPath) {
+                            currentFile = null;
+                            fileContentModified = false;
+                            document.getElementById('editor-placeholder').style.display = 'block';
+                            document.getElementById('editor-container').style.display = 'none';
+                            document.getElementById('editor-actions').style.display = 'none';
+                            document.getElementById('editor-title').textContent = 'File Editor';
+                        }
+
+                        loadFileExplorer(currentPath);
+                        showNotification(`${itemType === 'folder' ? 'Folder' : 'File'} deleted successfully`, 'success');
+                        logActivity(`Deleted ${itemType} ${itemPath}`);
+                    } else {
+                        showNotification(data.message || `Failed to delete ${itemType}`, 'danger');
+                        logActivity(`Error deleting ${itemType} ${itemPath}: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showNotification(`Error: ${error.message}`, 'danger');
+                    logActivity(`Error: ${error.message}`, 'error');
+                });
+        }
+
+
+        function downloadFile(filePath) {
+            showLoading('Preparing download...');
+
+            fetch(`/api/server/${serverName}/download?path=${encodeURIComponent(filePath)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    hideLoading();
+
+                    // Create a URL for the blob
+                    const url = window.URL.createObjectURL(blob);
+
+                    // Create a temporary link element
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filePath.split('/').pop();
+
+                    // Append to body, click, and remove
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    logActivity(`Downloaded file ${filePath}`);
+                })
+                .catch(error => {
+                    hideLoading();
+                    showNotification(`Error downloading file: ${error.message}`, 'danger');
+                    logActivity(`Error downloading file ${filePath}: ${error.message}`, 'error');
+                });
+        }
+
+
+        function uploadFiles(files) {
+            if (files.length === 0) return;
+
+            const progressContainer = document.getElementById('upload-progress-container');
+            const progressBar = document.getElementById('upload-progress');
+
+            // Show progress
+            progressContainer.classList.remove('d-none');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+
+            // Create a FormData object to hold the files
+            const formData = new FormData();
+            formData.append('path', currentPath);
+
+            // Add all files to the FormData
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            // Upload the files
+            const xhr = new XMLHttpRequest();
+
+            xhr.open('POST', `/api/server/${serverName}/upload`, true);
+
+            // Track upload progress
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percentComplete + '%';
+                    progressBar.textContent = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+
+                        if (response.success) {
+                            showNotification(`${files.length} file(s) uploaded successfully`, 'success');
+                            logActivity(`Uploaded ${files.length} file(s) to ${currentPath}`);
+                            loadFileExplorer(currentPath);
+                        } else {
+                            showNotification(response.message || 'Upload failed', 'danger');
+                            logActivity(`Error uploading files: ${response.message}`, 'error');
+                        }
+                    } catch (error) {
+                        showNotification('Error processing server response', 'danger');
+                        logActivity('Error processing server response', 'error');
+                    }
+                } else {
+                    showNotification(`Upload failed: Server returned ${xhr.status}`, 'danger');
+                    logActivity(`Upload failed: Server returned ${xhr.status}`, 'error');
+                }
+
+                // Hide progress after a delay
+                setTimeout(() => {
+                    progressContainer.classList.add('d-none');
+                }, 3000);
+            };
+
+            xhr.onerror = function () {
+                showNotification('Upload failed: Network error', 'danger');
+                logActivity('Upload failed: Network error', 'error');
+                progressContainer.classList.add('d-none');
+            };
+
+            // Send the form data
+            xhr.send(formData);
+        }
+
+
+        // Additional helper functions
+        function getFileExtension(filename) {
+            if (!filename.includes('.')) return 'txt';
+            return filename.split('.').pop().toLowerCase();
+        }
+        function getFileIcon(extension) {
+            const iconMap = {
+                txt: 'bi-file-text',
+                log: 'bi-file-text',
+                lua: 'bi-file-code',
+                ini: 'bi-file-earmark-binary',
+                conf: 'bi-file-earmark-binary',
+                json: 'bi-file-earmark-code',
+                xml: 'bi-file-earmark-code',
+                html: 'bi-file-earmark-code',
+                js: 'bi-file-earmark-code',
+                css: 'bi-file-earmark-code',
+                php: 'bi-file-earmark-code',
+                py: 'bi-file-earmark-code',
+                java: 'bi-file-earmark-code',
+                cpp: 'bi-file-earmark-code',
+                c: 'bi-file-earmark-code',
+                h: 'bi-file-earmark-code',
+                sh: 'bi-file-earmark-binary',
+                exe: 'bi-file-earmark-binary',
+                zip: 'bi-file-earmark-zip',
+                gz: 'bi-file-earmark-zip',
+                rar: 'bi-file-earmark-zip',
+                jpg: 'bi-file-earmark-image',
+                jpeg: 'bi-file-earmark-image',
+                png: 'bi-file-earmark-image',
+                gif: 'bi-file-earmark-image',
+                pdf: 'bi-file-earmark-pdf',
+                doc: 'bi-file-earmark-word',
+                docx: 'bi-file-earmark-word',
+                xls: 'bi-file-earmark-excel',
+                xlsx: 'bi-file-earmark-excel'
+            };
+
+            return iconMap[extension] || 'bi-file-earmark';
+        }
+
+
+        function showNotification(message, type = 'info') {
+            const existingToasts = document.querySelectorAll('.notification-toast');
+            existingToasts.forEach(toast => toast.remove());
+
+            const notification = document.createElement('div');
+            notification.className = `toast notification-toast bg-${type} text-white show`;
+            notification.role = 'alert';
+            notification.setAttribute('aria-live', 'assertive');
+            notification.setAttribute('aria-atomic', 'true');
+
+            notification.innerHTML = `
+               <div class="toast-header bg-${type} text-white">
+                   <i class="bi bi-info-circle me-2"></i>
+                   <strong class="me-auto">Notification</strong>
+                   <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+               </div>
+               <div class="toast-body">
+                   ${message}
+               </div>
+           `;
+
+            document.body.appendChild(notification);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+
+        function logActivity(message, type = 'info') {
+            const activityLog = document.getElementById('activity-log');
+            const timestamp = new Date().toLocaleTimeString();
+
+            const logEntry = document.createElement('div');
+            logEntry.className = 'p-2';
+
+            if (type === 'error') {
+                logEntry.innerHTML = `<span class="text-danger">[${timestamp}]</span> <span class="text-danger">${message}</span>`;
+            } else {
+                logEntry.innerHTML = `<span class="text-muted">[${timestamp}]</span> ${message}`;
+            }
+
+            activityLog.appendChild(logEntry);
+            activityLog.scrollTop = activityLog.scrollHeight;
+        }
+        function clearActivityLog() {
+            const activityLog = document.getElementById('activity-log');
+            activityLog.innerHTML = '';
+            logActivity('Activity log cleared');
+        }
+        function showContextMenu(event, itemPath, itemType) {
+            // Remove any existing context menu
+            const existingMenu = document.getElementById('context-menu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+
+            // Create context menu
+            const contextMenu = document.createElement('div');
+            contextMenu.id = 'context-menu';
+            contextMenu.className = 'dropdown-menu show bg-dark';
+            contextMenu.style.position = 'absolute';
+            contextMenu.style.left = `${event.pageX}px`;
+            contextMenu.style.top = `${event.pageY}px`;
+            contextMenu.style.zIndex = '1000';
+
+            // Menu items based on item type
+            if (itemType === 'folder') {
+                contextMenu.innerHTML = `
+                   <a class="dropdown-item text-light" href="#" id="cm-download-zip">
+                       <i class="bi bi-file-earmark-zip me-2"></i>Download as ZIP
+                   </a>
+                   <a class="dropdown-item text-light" href="#" id="cm-delete">
+                       <i class="bi bi-trash me-2"></i>Delete Folder
+                   </a>
+               `;
+            } else {
+                contextMenu.innerHTML = `
+                   <a class="dropdown-item text-light" href="#" id="cm-open">
+                       <i class="bi bi-pencil-square me-2"></i>Open
+                   </a>
+                   <a class="dropdown-item text-light" href="#" id="cm-download">
+                       <i class="bi bi-download me-2"></i>Download
+                   </a>
+                   <a class="dropdown-item text-light" href="#" id="cm-delete">
+                       <i class="bi bi-trash me-2"></i>Delete
+                   </a>
+               `;
+            }
+
+            document.body.appendChild(contextMenu);
+
+            // Add event listeners
+            if (itemType === 'folder') {
+                document.getElementById('cm-download-zip').addEventListener('click', function () {
+                    contextMenu.remove();
+                    const folderName = itemPath.split('/').pop();
+                    downloadAsZip(itemPath, `${folderName}.zip`);
+                });
+            } else {
+                document.getElementById('cm-open').addEventListener('click', function () {
+                    contextMenu.remove();
+                    openFile(itemPath);
+                });
+
+                document.getElementById('cm-download').addEventListener('click', function () {
+                    contextMenu.remove();
+                    downloadFile(itemPath);
+                });
+            }
+
+            document.getElementById('cm-delete').addEventListener('click', function () {
+                contextMenu.remove();
+                showDeleteConfirmation(itemPath, itemType);
+            });
+
+            // Close menu when clicking elsewhere
+            document.addEventListener('click', function closeMenu() {
+                if (document.getElementById('context-menu')) {
+                    document.getElementById('context-menu').remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }
+
+        function showDeleteConfirmation(itemPath, itemType) {
+            const itemName = itemPath.split('/').pop();
+
+            document.getElementById('delete-item-name').textContent = itemName;
+            document.getElementById('delete-item-path').value = itemPath;
+            document.getElementById('delete-item-type').value = itemType;
+
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        }
+
+        function showLoading(message = 'Processing...') {
+            const overlay = document.getElementById('loading-overlay');
+            document.getElementById('loading-message').textContent = message;
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+
+    </script>
+    <script>
+        // Store search data and state
+        let searchState = {
+            term: '',
+            caseSensitive: false,
+            results: null,
+            lastSearch: null
+        };
+
+        // Initialize search modal and functionality
+        document.getElementById('btn-search-files').addEventListener('click', function () {
+            const searchModal = new bootstrap.Modal(document.getElementById('searchModal'));
+            searchModal.show();
+
+            // Restore previous search state if available
+            document.getElementById('search-term').value = searchState.term;
+            document.getElementById('search-case-sensitive').checked = searchState.caseSensitive;
+
+            // If we have previous results, display them
+            if (searchState.results) {
+                displaySearchResults(searchState.results);
+            } else {
+                document.getElementById('search-results').innerHTML = '';
+            }
+        });
+
+        // Handle search execution
+        document.getElementById('btn-execute-search').addEventListener('click', executeSearch);
+        document.getElementById('search-term').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                executeSearch();
+            }
+        });
+
+        function executeSearch() {
+            const searchTerm = document.getElementById('search-term').value.trim();
+            const caseSensitive = document.getElementById('search-case-sensitive').checked;
+            const resultsContainer = document.getElementById('search-results');
+            const searchStatus = document.getElementById('search-status');
+
+            // Store current search parameters
+            searchState.term = searchTerm;
+            searchState.caseSensitive = caseSensitive;
+
+            if (!searchTerm) {
+                resultsContainer.innerHTML = '<div class="alert alert-warning">Please enter a search term</div>';
+                return;
+            }
+
+            // Show searching status
+            searchStatus.classList.remove('d-none');
+            resultsContainer.innerHTML = '';
+
+            // Execute search API call
+            fetch(`/api/server/${serverName}/search?term=${encodeURIComponent(searchTerm)}&case_sensitive=${caseSensitive}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(`HTTP error! Status: ${response.status}\n${errorData.message || response.statusText}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Hide searching status
+                    searchStatus.classList.add('d-none');
+
+                    // Store the search results
+                    searchState.results = data;
+                    searchState.lastSearch = new Date();
+
+                    // Display the results
+                    displaySearchResults(data);
+                })
+                .catch(error => {
+                    searchStatus.classList.add('d-none');
+                    resultsContainer.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                    logActivity(`Search error: ${error.message}`, 'error');
+                });
+        }
+
+        // Function to display search results
+        function displaySearchResults(data) {
+            const resultsContainer = document.getElementById('search-results');
+
+            if (data.success) {
+                if (data.results.files.length === 0 && data.results.folders.length === 0) {
+                    resultsContainer.innerHTML = `<div class="alert alert-info">No files or folders found matching "${searchState.term}" on ${serverName}</div>`;
+                } else {
+                    let resultHtml = '';
+
+                    // Add last search time if available
+                    if (searchState.lastSearch) {
+                        const formattedTime = searchState.lastSearch.toLocaleTimeString();
+                        resultHtml += `<div class="text-muted mb-3">Last searched at ${formattedTime}</div>`;
+                    }
+
+                    // Add folders section if there are folder results
+                    if (data.results.folders.length > 0) {
+                        resultHtml += `<h6 class="mt-3 mb-2">Folders (${data.results.folders.length})</h6>`;
+                        resultHtml += '<div class="list-group">';
+
+                        data.results.folders.forEach(folder => {
+                            resultHtml += `
+                            <div class="list-group-item list-group-item-action bg-dark text-light border-secondary folder-result" 
+                                 data-path="${folder.path}">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-folder text-warning me-2"></i>
+                                    <div>
+                                        <div>${folder.name}</div>
+                                        <small class="text-muted">${folder.path}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        });
+
+                        resultHtml += '</div>';
+                    }
+
+                    // Add files section if there are file results
+                    if (data.results.files.length > 0) {
+                        resultHtml += `<h6 class="mt-3 mb-2">Files (${data.results.files.length})</h6>`;
+                        resultHtml += '<div class="list-group">';
+
+                        data.results.files.forEach(file => {
+                            const fileExtension = getFileExtension(file.name);
+                            const fileIcon = getFileIcon(fileExtension);
+
+                            resultHtml += `
+                            <div class="list-group-item list-group-item-action bg-dark text-light border-secondary file-result" 
+                                 data-path="${file.path}">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi ${fileIcon} me-2"></i>
+                                    <div>
+                                        <div>${file.name}</div>
+                                        <small class="text-muted">${file.path}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        });
+
+                        resultHtml += '</div>';
+                    }
+
+                    // Show warning if limit was reached
+                    if (data.reached_limit) {
+                        resultHtml += `
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Showing first ${data.total_results} results. Refine your search for more specific results.
+                        </div>
+                    `;
+                    }
+
+                    resultsContainer.innerHTML = resultHtml;
+
+                    // Add click handlers for search results
+                    document.querySelectorAll('.folder-result').forEach(item => {
+                        item.addEventListener('click', function () {
+                            const path = this.getAttribute('data-path');
+                            loadFileExplorer(path);
+                            bootstrap.Modal.getInstance(document.getElementById('searchModal')).hide();
+                        });
+                    });
+
+                    document.querySelectorAll('.file-result').forEach(item => {
+                        item.addEventListener('click', function () {
+                            const path = this.getAttribute('data-path');
+                            openFile(path);
+                            bootstrap.Modal.getInstance(document.getElementById('searchModal')).hide();
+                        });
+                    });
+                }
+            } else {
+                resultsContainer.innerHTML = `<div class="alert alert-danger">Error: ${data.message}</div>`;
+            }
+        }
+
+        // Handle clearing search results
+        document.getElementById('btn-clear-search').addEventListener('click', function () {
+            searchState = {
+                term: '',
+                caseSensitive: false,
+                results: null,
+                lastSearch: null
+            };
+            document.getElementById('search-term').value = '';
+            document.getElementById('search-case-sensitive').checked = false;
+            document.getElementById('search-results').innerHTML = '';
+        });
+    </script>
+    <script>
+        document.getElementById('btn-terminal').addEventListener('click', function () {
+            window.open(`/terminal/${serverName}`, '_blank', 'width=800,height=600');
+        });
+    </script>
+</body>
+
+</html>

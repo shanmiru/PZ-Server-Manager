@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal - {{ server_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-dark: #1a1b26;
+            --bg-terminal: #24283b;
+            --text-color: #c0caf5;
+            --accent-color: #7aa2f7;
+            --success-color: #9ece6a;
+            --warning-color: #e0af68;
+            --danger-color: #f7768e;
+            --terminal-text: #a9b1d6;
+            --panel-bg: rgba(36, 40, 59, 0.8);
+            --glow-color: rgba(122, 162, 247, 0.15);
+            --terminal-prompt: #73daca;
+        }
+        
+        body { 
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            padding: 20px;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(42, 46, 66, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(42, 46, 66, 0.2) 0%, transparent 50%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .glass-container {
+            background-color: rgba(36, 40, 59, 0.85);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(122, 162, 247, 0.15);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .terminal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            color: #c0caf5;
+        }
+        
+        .terminal-title i {
+            margin-right: 12px;
+            color: var(--accent-color);
+            font-size: 1.5rem;
+        }
+        
+        .log-container {
+            background-color: var(--bg-terminal);
+            border-radius: 8px;
+            padding: 15px;
+            height: 500px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            white-space: pre-wrap;
+            color: var(--terminal-text);
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(122, 162, 247, 0.2);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            letter-spacing: 0.02rem;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: rgba(36, 40, 59, 0.5);
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 4px;
+            opacity: 0.7;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: #7aa2f7;
+        }
+        
+        .terminal-status {
+            display: inline-block;
+            margin-left: 15px;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 5px currentColor;
+        }
+        
+        .status-live {
+            background-color: var(--success-color);
+            color: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-disconnected {
+            background-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+        
+        .status-connecting {
+            background-color: var(--warning-color);
+            color: var(--warning-color);
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                box-shadow: 0 0 5px currentColor;
+            }
+            50% {
+                opacity: 0.6;
+                box-shadow: 0 0 8px currentColor;
+            }
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 5px currentColor;
+            }
+        }
+        
+        .btn-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-btn {
+            background-color: rgba(36, 40, 59, 0.8);
+            color: var(--text-color);
+            border: 1px solid rgba(122, 162, 247, 0.3);
+            border-radius: 6px;
+            padding: 8px 16px;
+            margin-right: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            border-color: var(--accent-color);
+        }
+        
+        .control-btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background-color: rgba(122, 162, 247, 0.15);
+            border-color: var(--accent-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: rgba(122, 162, 247, 0.25);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: rgba(169, 177, 214, 0.15);
+            border-color: rgba(169, 177, 214, 0.4);
+        }
+        
+        .btn-success {
+            background-color: rgba(158, 206, 106, 0.15);
+            border-color: var(--success-color);
+        }
+        
+        .btn-success:hover {
+            background-color: rgba(158, 206, 106, 0.25);
+            color: white;
+        }
+        
+        .btn-help {
+            background-color: rgba(224, 175, 104, 0.15);
+            border-color: var(--warning-color);
+            color: #e0e0e0;
+        }
+        
+        .btn-help:hover {
+            background-color: rgba(224, 175, 104, 0.25);
+            color: white;
+        }
+        
+        .control-btn i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .auto-scroll-container {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-check-input {
+            width: 1.5rem;
+            height: 0.8rem;
+            background-color: rgba(169, 177, 214, 0.2);
+            border-color: rgba(169, 177, 214, 0.4);
+        }
+        
+        .form-check-input:checked {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        
+        .form-check-label {
+            margin-left: 5px;
+            font-size: 0.9rem;
+            color: #a9b1d6;
+        }
+        
+        /* Modal styling */
+        .modal-content {
+            background-color: var(--panel-bg);
+            border: 1px solid rgba(122, 162, 247, 0.2);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid rgba(122, 162, 247, 0.15);
+        }
+        
+        .modal-footer {
+            border-top: 1px solid rgba(122, 162, 247, 0.15);
+        }
+        
+        .form-control {
+            background-color: rgba(36, 40, 59, 0.8);
+            border: 1px solid rgba(122, 162, 247, 0.2);
+            color: var(--text-color);
+            border-radius: 6px;
+            padding: 10px 15px;
+        }
+        
+        .form-control:focus {
+            background-color: rgba(42, 46, 66, 0.8);
+            box-shadow: 0 0 0 0.25rem rgba(122, 162, 247, 0.25);
+            border-color: rgba(122, 162, 247, 0.5);
+            color: white;
+        }
+        
+        /* Commands help modal styling */
+        .help-search {
+            margin-bottom: 15px;
+        }
+        
+        .commands-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .command-item {
+            background-color: rgba(36, 40, 59, 0.7);
+            border: 1px solid rgba(122, 162, 247, 0.15);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+        
+        .command-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-color: rgba(122, 162, 247, 0.3);
+            background-color: rgba(42, 46, 66, 0.7);
+        }
+        
+        .command-name {
+            font-weight: 600;
+            color: var(--accent-color);
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .command-description {
+            font-size: 0.9rem;
+            color: #c0caf5;
+            line-height: 1.5;
+        }
+        
+        .command-usage {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 0.85rem;
+            background-color: rgba(26, 27, 38, 0.7);
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-top: 8px;
+            display: inline-block;
+            color: #bb9af7;
+        }
+        
+        /* Server info card */
+        .server-info {
+            margin-bottom: 20px;
+        }
+        
+        .server-info p {
+            margin-bottom: 10px;
+        }
+        
+        .badge {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        
+        .badge-success {
+            background-color: rgba(158, 206, 106, 0.2);
+            color: var(--success-color);
+            border: 1px solid rgba(158, 206, 106, 0.3);
+        }
+        
+        .badge-warning {
+            background-color: rgba(224, 175, 104, 0.2);
+            color: var(--warning-color);
+            border: 1px solid rgba(224, 175, 104, 0.3);
+        }
+        
+        /* Custom command output styling */
+        .command-output {
+            color: #bb9af7;
+        }
+        
+        .command-sent {
+            color: #e0af68;
+            font-weight: 500;
+        }
+        
+        .error-message {
+            color: #f7768e;
+        }
+        
+        .success-message {
+            color: #9ece6a;
+        }
+        
+        /* Button close styling */
+        .btn-close-white {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .control-btn {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+                margin-bottom: 8px;
+            }
+            
+            .terminal-title {
+                font-size: 1.3rem;
+            }
+            
+            .log-container {
+                height: 400px;
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (prefers-reduced-motion) {
+            .control-btn:hover {
+                transform: none;
+            }
+            
+            .command-item:hover {
+                transform: none;
+            }
+            
+            .status-live, .status-connecting {
+                animation: none;
+            }
+        }
+        
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-dark: #f0f5fa;
+                --bg-terminal: #ffffff;
+                --text-color: #2c2e3b;
+                --accent-color: #5773cc;
+                --terminal-text: #2a324b;
+                --panel-bg: rgba(240, 245, 250, 0.8);
+                --glow-color: rgba(87, 115, 204, 0.15);
+            }
+            
+            .log-container {
+                box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(87, 115, 204, 0.2);
+            }
+            
+            .glass-container {
+                background-color: rgba(240, 245, 250, 0.85);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(87, 115, 204, 0.15);
+            }
+            
+            .command-item {
+                background-color: rgba(240, 245, 250, 0.7);
+            }
+            
+            .command-item:hover {
+                background-color: rgba(230, 235, 245, 0.7);
+            }
+            
+            .command-usage {
+                background-color: rgba(220, 225, 235, 0.7);
+                color: #5773cc;
+            }
+            
+            .btn-close-white {
+                filter: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="glass-container">
+            <div class="terminal-title">
+                <i class="bi bi-terminal-fill"></i>
+                Terminal for {{ server_name }}
+                <div class="terminal-status">
+                    <span class="status-indicator status-connecting" id="connection-status"></span>
+                    <span id="status-text">Connecting...</span>
+                </div>
+            </div>
+            
+            <div class="server-info">
+                {% if session_found %}
+                    <p>Server status: <span class="badge badge-success">ONLINE</span> Server logs are displayed below.</p>
+                {% else %}
+                    <p>Server status: <span class="badge badge-warning">INACTIVE</span> No active screen session found.</p>
+                {% endif %}
+            </div>
+            
+            <div class="d-flex justify-content-between flex-wrap">
+                <div>
+                    <button id="btn-refresh" class="control-btn btn-primary">
+                        <i class="bi bi-arrow-clockwise"></i>Refresh
+                    </button>
+                    <button id="btn-clear" class="control-btn btn-secondary">
+                        <i class="bi bi-trash"></i>Clear
+                    </button>
+                    <button id="btn-command" class="control-btn btn-success">
+                        <i class="bi bi-terminal"></i>Send Command
+                    </button>
+                    <button id="btn-help" class="control-btn btn-help">
+                        <i class="bi bi-question-circle"></i>Command Help
+                    </button>
+                </div>
+                
+                <div class="auto-scroll-container">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="auto-scroll-toggle" checked>
+                        <label class="form-check-label" for="auto-scroll-toggle">Auto-scroll</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="log-output" class="log-container mt-3">
+                Loading server logs...
+            </div>
+        </div>
+        
+        <!-- Command Modal -->
+        <div class="modal fade" id="commandModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Send Command to Server</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="command-input" class="form-label">Command</label>
+                            <input type="text" class="form-control" id="command-input" placeholder="Enter command...">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-success" id="send-command-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help Modal -->
+        <div class="modal fade" id="helpModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-question-circle me-2"></i>Project Zomboid Server Commands</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="help-search">
+                            <input type="text" class="form-control" id="command-search" placeholder="Search commands...">
+                        </div>
+                        <div class="commands-list" id="commands-container">
+                            <!-- Commands will be populated here by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const serverName = "{{ server_name }}";
+        const logOutput = document.getElementById('log-output');
+        const connectionStatus = document.getElementById('connection-status');
+        const statusText = document.getElementById('status-text');
+        const autoScrollToggle = document.getElementById('auto-scroll-toggle');
+        
+        let commandModal;
+        let helpModal;
+        let eventSource = null;
+        let reconnectAttempts = 0;
+        let maxReconnectAttempts = 5;
+        let reconnectDelay = 2000; // Start with 2 seconds
+        
+        // Zomboid commands data
+        const zomboidCommands = [
+            {
+                name: "additem",
+                description: "Give an item to a player. If no username is given then you will receive the item yourself. Count is optional.",
+                usage: "/additem \"username\" \"module.item\" count. Example: /additem \"rj\" Base.Axe 5"
+            },
+            {
+                name: "adduser",
+                description: "Add a new user to a whitelisted server.",
+                usage: "/adduser \"username\" \"password\""
+            },
+            {
+                name: "addvehicle",
+                description: "Spawn a vehicle.",
+                usage: "/addvehicle \"script\" \"user or x,y,z\", ex /addvehicle \"Base.VanAmbulance\" \"rj\""
+            },
+            {
+                name: "addxp",
+                description: "Give XP to a player.",
+                usage: "/addxp \"playername\" perkname=xp. Example /addxp \"rj\" Woodwork=2"
+            },
+            {
+                name: "alarm",
+                description: "Sound a building alarm at the Admin's position. (Must be in a room)",
+                usage: "/alarm"
+            },
+            {
+                name: "banid",
+                description: "Ban a SteamID.",
+                usage: "/banid SteamID"
+            },
+            {
+                name: "banuser",
+                description: "Ban a user. Add a -ip to also ban the IP. Add a -r \"reason\" to specify a reason for the ban.",
+                usage: "/banuser \"username\" -ip -r \"reason\". For example: /banuser \"rj\" -ip -r \"spawn kill\""
+            },
+            {
+                name: "changeoption",
+                description: "Change a server option.",
+                usage: "/changeoption optionName \"newValue\""
+            },
+            {
+                name: "checkModsNeedUpdate",
+                description: "Indicates whether a mod has been updated. Writes answer to log file",
+                usage: "/checkModsNeedUpdate"
+            },
+            {
+                name: "chopper",
+                description: "Place a helicopter event on a random player",
+                usage: "/chopper"
+            },
+            {
+                name: "createhorde",
+                description: "Spawn a horde near a player.",
+                usage: "/createhorde count \"username\". Example /createhorde 150 \"rj\""
+            },
+            {
+                name: "godmod",
+                description: "Make a player invincible. If no username is set, then you will become invincible yourself.",
+                usage: "/godmode \"username\" -value, ex /godmode \"rj\" -true (could be -false)"
+            },
+            {
+                name: "gunshot",
+                description: "Place a gunshot sound on a random player",
+                usage: "/gunshot"
+            },
+            {
+                name: "help",
+                description: "Display help information",
+                usage: "/help"
+            },
+            {
+                name: "invisible",
+                description: "Make a player invisible to zombies. If no username is set then you will become invisible yourself.",
+                usage: "/invisible \"username\" -value, ex /invisible \"rj\" -true (could be -false)"
+            },
+            {
+                name: "kick",
+                description: "Kick a user. Add a -r \"reason\" to specify a reason for the kick.",
+                usage: "/kickuser \"username\" -r \"reason\""
+            },
+            {
+                name: "lightning",
+                description: "Create lightning at player's location",
+                usage: "/lightning \"username\", username is optional except from the server console"
+            },
+            {
+                name: "log",
+                description: "Set log level.",
+                usage: "/log %1 %2"
+            },
+            {
+                name: "noclip",
+                description: "Makes a player pass through walls and structures. Toggles with no value.",
+                usage: "/noclip \"username\" -value. Example /noclip \"rj\" -true (could be -false)"
+            },
+            {
+                name: "players",
+                description: "List all connected players",
+                usage: "/players"
+            },
+            {
+                name: "quit",
+                description: "Save and quit the server",
+                usage: "/quit"
+            },
+            {
+                name: "releasesafehouse",
+                description: "Release a safehouse you own.",
+                usage: "/releasesafehouse"
+            },
+            {
+                name: "reloadlua",
+                description: "Reload a Lua script on the server.",
+                usage: "/reloadlua \"filename\""
+            },
+            {
+                name: "reloadoptions",
+                description: "Reload server options (ServerOptions.ini) and send to clients",
+                usage: "/reloadoptions"
+            },
+            {
+                name: "removeuserfromwhitelist",
+                description: "Remove a user from the whitelist.",
+                usage: "/removeuserfromwhitelist \"username\""
+            },
+            {
+                name: "removezombies",
+                description: "Remove all zombies from the server",
+                usage: "/removezombies"
+            },
+            {
+                name: "save",
+                description: "Save the current world",
+                usage: "/save"
+            },
+            {
+                name: "servermsg",
+                description: "Broadcast a message to all connected players.",
+                usage: "/servermsg \"My Message\""
+            },
+            {
+                name: "setaccesslevel",
+                description: "Set access level of a player. Current levels: Admin, Moderator, Overseer, GM, Observer.",
+                usage: "/setaccesslevel \"username\" \"accesslevel\". Example /setaccesslevel \"rj\" \"moderator\""
+            },
+            {
+                name: "showoptions",
+                description: "Show the list of current server options and values.",
+                usage: "/showoptions"
+            },
+            {
+                name: "startrain",
+                description: "Starts raining on the server.",
+                usage: "/startrain \"intensity\", optional intensity is from 1 to 100"
+            },
+            {
+                name: "startstorm",
+                description: "Starts a storm on the server.",
+                usage: "/startstorm \"duration\", optional duration is in game hours"
+            },
+            {
+                name: "stats",
+                description: "Set and clear server statistics.",
+                usage: "/stats none|file|console|all period. Example /stats file 10"
+            },
+            {
+                name: "stoprain",
+                description: "Stop raining on the server",
+                usage: "/stoprain"
+            },
+            {
+                name: "stopweather",
+                description: "Stop weather on the server",
+                usage: "/stopweather"
+            },
+            {
+                name: "teleport",
+                description: "Teleport to a player. Once teleported, wait for the map to appear.",
+                usage: "/teleport \"playername\" or /teleport \"player1\" \"player2\". Example /teleport \"rj\" or /teleport \"rj\" \"toUser\""
+            },
+            {
+                name: "teleportto",
+                description: "Teleport to coordinates.",
+                usage: "/teleportto x,y,z. Example /teleportto 10000,11000,0"
+            },
+            {
+                name: "thunder",
+                description: "Create thunder at player's location",
+                usage: "/thunder \"username\", username is optional except from the server console"
+            },
+            {
+                name: "unbanid",
+                description: "Unban a SteamID.",
+                usage: "/unbanid SteamID"
+            },
+            {
+                name: "unbanuser",
+                description: "Unban a player.",
+                usage: "/unbanuser \"username\""
+            },
+            {
+                name: "voiceban",
+                description: "Block voice from user.",
+                usage: "/voiceban \"username\" -value. Example /voiceban \"rj\" -true (could be -false)"
+            }
+        ];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            commandModal = new bootstrap.Modal(document.getElementById('commandModal'));
+            helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+            
+            // Populate help modal with commands
+            populateCommandsList(zomboidCommands);
+            
+            // Initial load of logs (fallback)
+            loadLogsOnce();
+            
+            // Start SSE connection
+            connectEventSource();
+            
+            // Set up event listeners
+            document.getElementById('btn-refresh').addEventListener('click', loadLogsOnce);
+            document.getElementById('btn-clear').addEventListener('click', clearLogs);
+            document.getElementById('btn-command').addEventListener('click', function() {
+                commandModal.show();
+            });
+            document.getElementById('btn-help').addEventListener('click', function() {
+                helpModal.show();
+            });
+            
+            document.getElementById('send-command-btn').addEventListener('click', sendCommand);
+            document.getElementById('command-input').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') sendCommand();
+            });
+            
+            // Command search functionality
+            document.getElementById('command-search').addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredCommands = zomboidCommands.filter(cmd => 
+                    cmd.name.toLowerCase().includes(searchTerm) || 
+                    cmd.description.toLowerCase().includes(searchTerm)
+                );
+                populateCommandsList(filteredCommands);
+            });
+        });
+        
+        function populateCommandsList(commands) {
+            const commandsContainer = document.getElementById('commands-container');
+            commandsContainer.innerHTML = '';
+            
+            if (commands.length === 0) {
+                commandsContainer.innerHTML = '<p class="text-center">No commands found.</p>';
+                return;
+            }
+            
+            commands.forEach(cmd => {
+                const cmdElement = document.createElement('div');
+                cmdElement.className = 'command-item';
+                cmdElement.innerHTML = `
+                    <span class="command-name">/${cmd.name}</span>
+                    <div class="command-description">${cmd.description}</div>
+                    <div class="command-usage">${cmd.usage}</div>
+                `;
+                
+                // Add click to copy functionality
+                cmdElement.addEventListener('click', function() {
+                    const commandInput = document.getElementById('command-input');
+                    commandInput.value = cmd.name + ' ';
+                    helpModal.hide();
+                    commandModal.show();
+                    commandInput.focus();
+                });
+                
+                commandsContainer.appendChild(cmdElement);
+            });
+        }
+        
+        function updateConnectionStatus(status, text) {
+            connectionStatus.className = 'status-indicator';
+            connectionStatus.classList.add('status-' + status);
+            statusText.textContent = text;
+        }
+        
+        function appendLogs(logs) {
+            // If logs don't end with <br>, add one
+            if (!logs.endsWith('<br>')) {
+                logs += '<br>';
+            }
+            
+            logOutput.innerHTML += logs;
+            
+            // Auto-scroll if enabled
+            if (autoScrollToggle.checked) {
+                logOutput.scrollTop = logOutput.scrollHeight;
+            }
+        }
+        
+        function loadLogsOnce() {
+            updateConnectionStatus('connecting', 'Fetching logs...');
+            
+            fetch(`/server/${serverName}/logs?lines=200`)
+                .then(response => response.json())
+                .then(data => {
+                    logOutput.innerHTML = data.logs || "No logs available";
+                    if (autoScrollToggle.checked) {
+                        logOutput.scrollTop = logOutput.scrollHeight;
+                    }
+                    
+                    // If we need to load logs manually, we might be disconnected from SSE
+                    if (!eventSource || eventSource.readyState === 2) {
+                        connectEventSource();
+                    } else {
+                        updateConnectionStatus('live', 'Live');
+                    }
+                })
+                .catch(error => {
+                    logOutput.innerHTML = `<span class="error-message">Error loading logs: ${error.message}</span>`;
+                    updateConnectionStatus('disconnected', 'Error');
+                });
+        }
+        
+        function clearLogs() {
+            fetch(`/server/${serverName}/clear_logs`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        logOutput.innerHTML = "<span class='success-message'>Logs cleared</span>";
+                        // No need to reload logs as SSE will push the cleared state
+                    } else {
+                        appendLogs(`<span class="error-message">Error clearing logs: ${data.message}</span><br>`);
+                    }
+                })
+                .catch(error => {
+                    appendLogs(`<span class="error-message">Error clearing logs: ${error.message}</span><br>`);
+                });
+        }
+        
+        function sendCommand() {
+            const command = document.getElementById('command-input').value.trim();
+            if (!command) return;
+            
+            fetch(`/api/server/${serverName}/terminal-command`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    command: command
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        commandModal.hide();
+                        document.getElementById('command-input').value = '';
+                        // Log that the command was sent
+                        appendLogs(`<span class="command-sent">Command sent: ${command}</span><br>`);
+                        // No need to reload logs as SSE will push any output
+                    } else {
+                        alert(`Error: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    alert(`Error: ${error.message}`);
+                });
+        }
+        
+        function connectEventSource() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            updateConnectionStatus('connecting', 'Connecting...');
+            
+            eventSource = new EventSource(`/server/${serverName}/logs/stream`);
+            
+            eventSource.onopen = function() {
+                updateConnectionStatus('live', 'Live');
+                reconnectAttempts = 0;
+                reconnectDelay = 2000;
+            };
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // Handle logs
+                    if (data.logs) {
+                        // Convert escaped newlines back to <br> tags for HTML display
+                        const formattedLogs = data.logs.replace(/\\n/g, '<br>');
+                        appendLogs(formattedLogs);
+                    }
+                    
+                    // Handle errors
+                    if (data.error) {
+                        appendLogs(`<span class="error-message">Error: ${data.error}</span><br>`);
+                    }
+                    
+                    // Handle heartbeat (could update UI to show connection is alive)
+                    if (data.heartbeat) {
+                        updateConnectionStatus('live', 'Live');
+                    }
+                } catch (error) {
+                    console.error('Error parsing event data:', error);
+                }
+            };
+            
+            eventSource.onerror = function() {
+                updateConnectionStatus('disconnected', 'Disconnected');
+                
+                // Implement reconnection strategy
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    setTimeout(() => {
+                        reconnectAttempts++;
+                        updateConnectionStatus('connecting', `Reconnecting (${reconnectAttempts}/${maxReconnectAttempts})...`);
+                        connectEventSource();
+                    }, reconnectDelay);
+                    
+                    // Exponential backoff
+                    reconnectDelay = Math.min(reconnectDelay * 1.5, 30000);
+                } else {
+                    appendLogs('<span class="error-message">Connection failed after multiple attempts. Please refresh the page to try again.</span><br>');
+                }
+            };
+        }
+        
+        // Clean up event source when leaving the page
+        window.addEventListener('beforeunload', function() {
+            if (eventSource) {
+                eventSource.close();
+            }
+        });
+    </script>
+</body>
+</html>
