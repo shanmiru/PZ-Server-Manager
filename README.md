@@ -11,6 +11,9 @@ Found a bug? Try fixing the code yourself or put it on the "_Issues_" page so I 
 -Project Zomboid Dedicated Server
 -Simple Project Zomboid server manager
 
+## Todo:
+- Add a new dashboard for maniging mods.
+
 ## Dashboard:
 
 ![PZ Manager Dashboard](https://i.imgur.com/4vjzfT8.png)
