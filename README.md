@@ -1,7 +1,7 @@
 # Tempest PZ Manager
 
 ## 📊 Project Status
-**Current Version:** `v0.1.0 - Early Development`
+**Current Version:** `v0.1.1 - Early Development`
 
 
 This server manager was made by an _inexperienced_ developer, so feel free to request any functions you would like added in the future. 
@@ -13,6 +13,12 @@ Found a bug? Try fixing the code yourself or put it on the "_Issues_" page so I 
 
 ## Todo:
 - Add a new dashboard for maniging mods.
+
+## What's new: v0.1.1
+- RCON base configuration
+- Security improvements
+- Fixed bugs
+- Added Features
 
 ## Dashboard:
 
