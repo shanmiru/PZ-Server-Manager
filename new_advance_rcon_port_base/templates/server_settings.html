@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tempest PZ Manager - Settings</title>
+    <link rel="icon" href="{{ get_secure_image_url('server_logo') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --bs-body-bg: #121212;
+            --bs-body-color: #e0e0e0;
+            --bs-secondary-color: #adb5bd;
+            --accent-color: #6c5ce7;
+            --accent-color-rgb: 108, 92, 231;
+        }
+
+        body {
+            background-color: var(--bs-body-bg);
+            color: var(--bs-body-color);
+        }
+
+        .navbar {
+            background-color: #1e1e1e;
+            box-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .navbar-brand {
+            font-family: 'Rubik', sans-serif;
+            font-weight: 500;
+        }
+
+        .card {
+            background-color: #1e1e1e;
+            border-color: #2f3542;
+            transition: transform 0.2s;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #2f3542;
+        }
+
+        .settings-card {
+            border: 1px solid #2f3542;
+            transition: transform 0.2s;
+        }
+
+        .settings-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .breadcrumb {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            border: 1px solid #2f3542;
+        }
+
+        .breadcrumb a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .form-select,
+        .form-control {
+            background-color: #212529;
+            color: #fff;
+            border-color: #495057;
+        }
+
+        .form-select:focus,
+        .form-control:focus {
+            background-color: #2c3034;
+            color: #fff;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.25rem rgba(var(--accent-color-rgb), 0.25);
+        }
+
+        .form-select option {
+            background-color: #212529;
+            color: #fff;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .list-group-item-action {
+            color: #adb5bd;
+        }
+
+        .list-group-item-action:hover {
+            background-color: rgba(108, 92, 231, 0.1);
+            color: #fff;
+        }
+
+        .list-group-item-action.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #5649c0;
+            border-color: #5649c0;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            padding: 0.75rem;
+            position: relative;
+            color: #6c757d;
+        }
+
+        .step.active {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .step.completed {
+            color: #198754;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #343a40;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .step.active .step-number {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .step.completed .step-number {
+            background-color: #198754;
+            color: #fff;
+        }
+
+        .bg-dark {
+            background-color: #212529 !important;
+        }
+
+        .step-indicator {
+            display: flex;
+            margin-bottom: 1.5rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            border: 1px solid #2f3542;
+            padding: 0.5rem;
+        }
+
+        .settings-sidebar .list-group-item {
+            background-color: transparent;
+            border-color: #2f3542;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .settings-sidebar .list-group-item:hover {
+            background-color: rgba(108, 92, 231, 0.1);
+        }
+
+        .settings-sidebar .list-group-item.active {
+            background-color: rgba(108, 92, 231, 0.2);
+            border-left: 3px solid var(--accent-color);
+            font-weight: 500;
+        }
+
+        .schedule-options {
+            transition: all 0.3s ease;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border: 1px solid #2f3542;
+        }
+
+        .toggle-password {
+            cursor: pointer;
+        }
+
+        code {
+            color: #adb5bd;
+            background-color: #343a40;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .server-status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-running {
+            background-color: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .status-stopped {
+            background-color: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="bi bi-hdd-network me-2"></i>Tempest PZ Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('users') }}">
+                            <i class="bi bi-people me-1"></i> Manage Users
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('server_control', server_name=server.name) }}">{{ server.name }}</a></li>
+                <li class="breadcrumb-item active">Settings</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>Server Settings
+                </h5>
+                <span class="badge bg-{{ 'success' if server.status == 'running' else 'danger' }}">
+                    <span class="server-status-indicator status-{{ server.status }}"></span>
+                    {{ server.status }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Settings Sidebar -->
+                    <div class="col-md-3">
+                        <div class="card settings-sidebar mb-4">
+                            <div class="card-header bg-dark">
+                                <h6 class="mb-0">Settings Menu</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="list-group list-group-flush">
+                                    <a href="#server-options" data-bs-toggle="list" class="list-group-item list-group-item-action active">
+                                        <i class="bi bi-puzzle me-2"></i>Server Options
+                                    </a>
+                                    <a href="#backup-tab" data-bs-toggle="list" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-cloud-arrow-up me-2"></i>Backup
+                                    </a>
+                                    <a href="#security-tab" data-bs-toggle="list" class="list-group-item list-group-item-action">
+                                        <i class="bi bi-shield-lock me-2"></i>Server Security
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4">
+                            <div class="card-header bg-dark">
+                                <h6 class="mb-0">Server Info</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-1"><strong>Name:</strong> {{ server.name }}</p>
+                                <p class="mb-1"><strong>Port:</strong> {{ server.port }}</p>
+                                <p class="mb-1"><strong>Status:</strong> 
+                                    <span class="badge bg-{{ 'success' if server.status == 'running' else 'danger' }}">
+                                        {{ server.status }}
+                                    </span>
+                                </p>
+                                <p class="mb-0"><strong>Created:</strong> {{ server.created_at }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Content -->
+                    <div class="col-md-9">
+                        <div class="tab-content">
+                            <!-- Server Options Tab -->
+                            <div class="tab-pane fade show active" id="server-options">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0"><i class="bi bi-puzzle me-2"></i>Auto-Restart Configuration</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <form action="/server/{{ server.name }}/auto-restart" method="POST">
+                                            <div class="mb-3 form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="auto_restart_enabled" name="auto_restart_enabled" {% if server.auto_restart_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="auto_restart_enabled">Enable Auto-Restart</label>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="restart_schedule" class="form-label">Restart Schedule</label>
+                                                <select class="form-select" id="restart_schedule" name="restart_schedule">
+                                                    <option value="daily" {% if server.restart_schedule=="daily" %}selected{% endif %}>Daily</option>
+                                                    <option value="weekly" {% if server.restart_schedule=="weekly" %}selected{% endif %}>Weekly</option>
+                                                    <option value="custom" {% if server.restart_schedule=="custom" %}selected{% endif %}>Custom</option>
+                                                </select>
+                                            </div>
+
+                                            <div id="daily-options" class="schedule-options mb-3 {% if server.restart_schedule != 'daily' %}d-none{% endif %}">
+                                                <label for="daily_time" class="form-label">Time (24h format)</label>
+                                                <input type="time" class="form-control" id="daily_time" name="daily_time" value="{{ server.daily_time or '04:00' }}">
+                                            </div>
+
+                                            <div id="weekly-options" class="schedule-options mb-3 {% if server.restart_schedule != 'weekly' %}d-none{% endif %}">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <label for="weekly_day" class="form-label">Day of Week</label>
+                                                        <select class="form-select" id="weekly_day" name="weekly_day">
+                                                            <option value="1" {% if server.weekly_day==1 %}selected{% endif %}>Monday</option>
+                                                            <option value="2" {% if server.weekly_day==2 %}selected{% endif %}>Tuesday</option>
+                                                            <option value="3" {% if server.weekly_day==3 %}selected{% endif %}>Wednesday</option>
+                                                            <option value="4" {% if server.weekly_day==4 %}selected{% endif %}>Thursday</option>
+                                                            <option value="5" {% if server.weekly_day==5 %}selected{% endif %}>Friday</option>
+                                                            <option value="6" {% if server.weekly_day==6 %}selected{% endif %}>Saturday</option>
+                                                            <option value="0" {% if server.weekly_day==0 %}selected{% endif %}>Sunday</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="weekly_time" class="form-label">Time (24h format)</label>
+                                                        <input type="time" class="form-control" id="weekly_time" name="weekly_time" value="{{ server.weekly_time or '04:00' }}">
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div id="custom-options" class="schedule-options mb-3 {% if server.restart_schedule != 'custom' %}d-none{% endif %}">
+                                                <label for="cron_expression_restart" class="form-label">Cron Expression</label>
+                                                <input type="text" class="form-control" id="cron_expression_restart" name="cron_expression" placeholder="0 4 * * *" value="{{ server.cron_expression }}">
+                                                <div class="form-text">Default: 0 4 * * * (4 AM daily)</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="warning_minutes" class="form-label">Warning Time (minutes before restart)</label>
+                                                <input type="number" class="form-control" id="warning_minutes" name="warning_minutes" min="1" max="60" value="{{ server.warning_minutes or 10 }}">
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="warning_message" class="form-label">Warning Message</label>
+                                                <input type="text" class="form-control" id="warning_message" name="warning_message" value="{{ server.warning_message or 'Server will restart in %m minutes for maintenance.' }}">
+                                                <div class="form-text">Use %m to display minutes remaining</div>
+                                            </div>
+
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="bi bi-save me-2"></i>Save Auto-Restart Settings
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- End Server Options Tab -->
+
+                            <!-- Backup Tab -->
+                            <div class="tab-pane fade" id="backup-tab">
+                                <!-- AWS CLI Status -->
+                                <div class="card mb-4">
+                                    <div class="card-header bg-dark">
+                                        <h6 class="mb-0"><i class="bi bi-cloud-arrow-up me-2"></i>Backup Configuration</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="alert {% if aws_installed %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center">
+                                            <i class="bi {% if aws_installed %}bi-check-circle{% else %}bi-exclamation-triangle{% endif %} me-3 fs-4"></i>
+                                            <div>
+                                                <h5 class="mb-1">AWS CLI Status</h5>
+                                                {% if aws_installed %}
+                                                <p class="mb-0">AWS CLI is installed and ready for use.</p>
+                                                {% else %}
+                                                <p class="mb-0">AWS CLI is not installed. Please install AWS CLI to enable backups.</p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        {% if aws_installed %}
+                                        <!-- Backup Setup Steps -->
+                                        <div class="step-indicator mb-4">
+                                            <div class="step {% if aws_setup.setup_enabled %}completed{% else %}active{% endif %}">
+                                                <div class="step-number">1</div>
+                                                <div class="step-title">S3 Configuration</div>
+                                            </div>
+                                            <div class="step {% if aws_setup.setup_enabled %}active{% else %}{% endif %}">
+                                                <div class="step-number">2</div>
+                                                <div class="step-title">Backup Settings</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Step 1: AWS Configuration (updated for R2 profile) -->
+                                        <div id="aws-config-step" class="{% if aws_setup.setup_enabled %}d-none{% endif %}">
+                                            <div class="card mb-4">
+                                                <div class="card-header bg-dark">
+                                                    <h6 class="mb-0">S3 Credentials (Cloudflare R2)</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form action="/server/{{ server.name }}/aws-config" method="POST">
+                                                        <div class="mb-3">
+                                                            <label for="access_key" class="form-label">Access Key ID</label>
+                                                            <input type="text" class="form-control" id="access_key" name="access_key" required {% if aws_setup.access_key_id %}value="{{ aws_setup.access_key_id }}" {% endif %}>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="secret_key" class="form-label">Secret Access Key</label>
+                                                            <div class="input-group">
+                                                                <input type="password" class="form-control" id="secret_key" name="secret_key" required {% if aws_setup.secret_access_key %}value="{{ aws_setup.secret_access_key }}" {% endif %}>
+                                                                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="secret_key">
+                                                                    <i class="bi bi-eye"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="endpoint_url" class="form-label">Endpoint URL</label>
+                                                            <input type="text" class="form-control" id="endpoint_url" name="endpoint_url" placeholder="https://account-id.r2.cloudflarestorage.com" {% if aws_setup.endpoint_url %}value="{{ aws_setup.endpoint_url }}" {% endif %}>
+                                                            <div class="form-text">Required for Cloudflare R2 or other S3-compatible services</div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="region" class="form-label">Default Region</label>
+                                                            <select class="form-select" id="region" name="region" required>
+                                                                <option value="auto" {% if aws_setup.region=="auto" or not aws_setup.region %}selected{% endif %}>Auto</option>
+                                                                <option value="us-east-1" {% if aws_setup.region=="us-east-1" %}selected{% endif %}>US East (N. Virginia)</option>
+                                                                <option value="us-east-2" {% if aws_setup.region=="us-east-2" %}selected{% endif %}>US East (Ohio)</option>
+                                                                <option value="us-west-1" {% if aws_setup.region=="us-west-1" %}selected{% endif %}>US West (N. California)</option>
+                                                                <option value="us-west-2" {% if aws_setup.region=="us-west-2" %}selected{% endif %}>US West (Oregon)</option>
+                                                                <option value="eu-west-1" {% if aws_setup.region=="eu-west-1" %}selected{% endif %}>EU (Ireland)</option>
+                                                                <option value="eu-central-1" {% if aws_setup.region=="eu-central-1" %}selected{% endif %}>EU (Frankfurt)</option>
+                                                                <option value="ap-northeast-1" {% if aws_setup.region=="ap-northeast-1" %}selected{% endif %}>Asia Pacific (Tokyo)</option>
+                                                                <option value="ap-southeast-1" {% if aws_setup.region=="ap-southeast-1" %}selected{% endif %}>Asia Pacific (Singapore)</option>
+                                                                <option value="ap-southeast-2" {% if aws_setup.region=="ap-southeast-2" %}selected{% endif %}>Asia Pacific (Sydney)</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label for="profile_name" class="form-label">Profile Name</label>
+                                                            <input type="text" class="form-control" id="profile_name" name="profile_name" value="{{ aws_setup.profile_name or 'r2' }}">
+                                                            <div class="form-text">Name of the AWS CLI profile (default: r2)</div>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label for="output_format" class="form-label">Output Format</label>
+                                                            <select class="form-select" id="output_format" name="output_format">
+                                                                <option value="json" {% if aws_setup.output_format=="json" or not aws_setup.output_format %}selected{% endif %}>JSON</option>
+                                                                <option value="text" {% if aws_setup.output_format=="text" %}selected{% endif %}>Text</option>
+                                                                <option value="table" {% if aws_setup.output_format=="table" %}selected{% endif %}>Table</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="d-grid">
+                                                            <button type="submit" class="btn btn-primary">
+                                                                <i class="bi bi-check-circle me-2"></i>Save S3 Configuration
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Step 2: Backup Settings -->
+                                        <div id="backup-settings-step" class="{% if not aws_setup.setup_enabled %}d-none{% endif %}">
+                                            <div class="card mb-4">
+                                                <div class="card-header bg-dark">
+                                                    <h6 class="mb-0">Backup Settings</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <form action="/server/{{ server.name }}/backup-config" method="POST">
+                                                        <div class="mb-3">
+                                                            <label for="bucket_name" class="form-label">Bucket Name</label>
+                                                            <input type="text" class="form-control" id="bucket_name" name="bucket_name" required {% if aws_setup.bucket_name %}value="{{ aws_setup.bucket_name }}" {% endif %}>
+                                                        </div>
+                                                        <div class="mb-3 form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox" id="backup_enabled" name="backup_enabled" {% if aws_setup.backup_enabled %}checked{% endif %}>
+                                                            <label class="form-check-label" for="backup_enabled">Enable Automatic Backups</label>
+                                                        </div>
+
+                                                        <!-- Backup schedule section -->
+                                                        <div class="mb-4">
+                                                            <label class="form-label">Backup Schedule</label>
+                                                            <div class="row g-3 mb-3">
+                                                                <div class="col-md-6">
+                                                                    <select class="form-select" id="backup_schedule_type" name="backup_schedule_type">
+                                                                        <option value="custom" {% if aws_setup.backup_schedule_type=="custom" %}selected{% endif %}>Custom Cron</option>
+                                                                        <option value="interval" {% if aws_setup.backup_schedule_type=="interval" or not aws_setup.backup_schedule_type %}selected{% endif %}>Time Interval</option>
+                                                                        <option value="fixed" {% if aws_setup.backup_schedule_type=="fixed" %}selected{% endif %}>Fixed Schedule</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Interval-based schedule -->
+                                                            <div id="interval-schedule" class="schedule-options {% if aws_setup.backup_schedule_type != 'interval' and aws_setup.backup_schedule_type %}d-none{% endif %}">
+                                                                <div class="row g-3">
+                                                                    <div class="col-md-6">
+                                                                        <div class="input-group">
+                                                                            <input type="number" class="form-control" id="interval_value" name="interval_value" min="1" value="{{ aws_setup.interval_value or 3 }}">
+                                                                            <select class="form-select" id="interval_unit" name="interval_unit">
+                                                                                <option value="hours" {% if aws_setup.interval_unit=="hours" or not aws_setup.interval_unit %}selected{% endif %}>Hours</option>
+                                                                                <option value="days" {% if aws_setup.interval_unit=="days" %}selected{% endif %}>Days</option>
+                                                                                <option value="weeks" {% if aws_setup.interval_unit=="weeks" %}selected{% endif %}>Weeks</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div class="form-text">Backup every X hours/days/weeks</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Fixed schedule -->
+                                                            <div id="fixed-schedule" class="schedule-options {% if aws_setup.backup_schedule_type != 'fixed' %}d-none{% endif %}">
+                                                                <div class="row g-3">
+                                                                    <div class="col-md-6">
+                                                                        <label for="fixed_time" class="form-label">Time (24h format)</label>
+                                                                        <input type="time" class="form-control" id="fixed_time" name="fixed_time" value="{{ aws_setup.fixed_time or '04:00' }}">
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label for="fixed_days" class="form-label">Days</label>
+                                                                        <div>
+                                                                            {% for day in ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] %}
+                                                                            <div class="form-check form-check-inline">
+                                                                                <input class="form-check-input" type="checkbox" id="day_{{ day }}" name="fixed_days" value="{{ day }}" {% if day in aws_setup.fixed_days %}checked{% endif %}>
+                                                                                <label class="form-check-label" for="day_{{ day }}">{{ day|capitalize }}</label>
+                                                                            </div>
+                                                                            {% endfor %}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <!-- Custom cron schedule -->
+                                                            <div id="custom-schedule" class="schedule-options {% if aws_setup.backup_schedule_type != 'custom' %}d-none{% endif %}">
+                                                                <div class="row g-3">
+                                                                    <div class="col-12">
+                                                                        <label for="cron_expression_backup" class="form-label">Cron Expression</label>
+                                                                        <input type="text" class="form-control" id="cron_expression_backup" name="cron_expression" placeholder="0 4 * * *" value="{{ aws_setup.cron_expression or '0 4 * * *' }}">
+                                                                        <div class="form-text">
+                                                                            Format: minute hour day_of_month month day_of_week<br>
+                                                                            <strong>Examples:</strong><br>
+                                                                            Every 1 minute: <code>* * * * *</code><br>
+                                                                            Every 10 minutes: <code>*/10 * * * *</code><br>
+                                                                            Every hour: <code>0 * * * *</code><br>
+                                                                            Every day at 4 AM: <code>0 4 * * *</code><br>
+                                                                            Every Sunday: <code>0 0 * * 0</code>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                            <label for="retention_count" class="form-label">Retention Policy</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text">Keep</span>
+                                                                <input type="number" class="form-control" id="retention_count" name="retention_count" min="1" max="100" value="{{ aws_setup.retention_count or 10 }}">
+                                                                <span class="input-group-text">most recent backups</span>
+                                                            </div>
+                                                            <div class="form-text">Older backups will be automatically deleted</div>
+                                                        </div>
+
+                                                        <div class="mb-4">
+                                                            <label class="form-label">Items to Backup</label>
+                                                            <div class="card p-3 bg-dark">
+                                                                <div class="form-check mb-2">
+                                                                    <input class="form-check-input" type="checkbox" name="backup_items" id="backup-saves" value="Saves/Multiplayer" {% if 'Saves/Multiplayer' in aws_setup.backup_items %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="backup-saves">Game Saves</label>
+                                                                </div>
+                                                                <div class="form-check mb-2">
+                                                                    <input class="form-check-input" type="checkbox" name="backup_items" id="backup-server" value="Server" {% if 'Server' in aws_setup.backup_items %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="backup-server">Server Configuration Files</label>
+                                                                </div>
+                                                                <div class="form-check mb-2">
+                                                                    <input class="form-check-input" type="checkbox" name="backup_items" id="backup-db" value="db" {% if 'db' in aws_setup.backup_items %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="backup-db">Database Files</label>
+                                                                </div>
+                                                                <div class="form-check mb-2">
+                                                                    <input class="form-check-input" type="checkbox" name="backup_items" id="backup-logs" value="Logs" {% if 'Logs' in aws_setup.backup_items %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="backup-logs">Log Files</label>
+                                                                </div>
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="backup_items" id="backup-startup" value="backups/startup" {% if 'backups/startup' in aws_setup.backup_items %}checked{% endif %}>
+                                                                    <label class="form-check-label" for="backup-startup">Startup Backups</label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="d-grid gap-2">
+                                                            <button type="submit" class="btn btn-primary">
+                                                                <i class="bi bi-save me-2"></i>Save Backup Settings
+                                                            </button>
+                                                            <button type="submit" name="run_backup_now" value="true" class="btn btn-success">
+                                                                <i class="bi bi-play-fill me-2"></i>Run Backup Now
+                                                            </button>
+                                                            <button type="submit" name="test_backup" value="test" class="btn btn-outline-secondary">
+                                                                <i class="bi bi-cloud-upload me-2"></i>Save and Test Backup
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-secondary" id="back-to-aws-config">
+                                                                <i class="bi bi-arrow-left me-2"></i>Back to S3 Configuration
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <!-- AWS CLI Installation Instructions -->
+                                        <div class="card mb-4">
+                                            <div class="card-header bg-dark">
+                                                <h6 class="mb-0">AWS CLI Installation</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p>To enable backups, install the AWS CLI:</p>
+                                                <div class="bg-dark p-3 rounded mb-3">
+                                                    <code>sudo apt-get update<br>sudo apt-get install -y awscli</code>
+                                                </div>
+                                                <p>Or install the latest version with:</p>
+                                                <div class="bg-dark p-3 rounded mb-3">
+                                                    <code>
+                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"<br>
+                    unzip awscliv2.zip<br>
+                    sudo ./aws/install
+                                                    </code>
+                                                </div>
+                                                <div class="d-grid">
+                                                    <button class="btn btn-primary" onclick="location.reload()">
+                                                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- End Backup Tab -->
+
+                            <!-- Security Tab -->
+                            <div class="tab-pane fade" id="security-tab">
+                                <div class="card mb-4">
+                                    <div class="card-header bg-dark">
+                                        <h6 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Password Management</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <form action="/server/{{ server.name }}/update-passwords" method="POST">
+                                            <div class="mb-3">
+                                                <label for="admin_password" class="form-label">Admin Password</label>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="admin_password" name="admin_password" value="{{ server.admin_password }}">
+                                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="admin_password">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="server_password" class="form-label">Server Password</label>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="server_password" name="server_password" value="{{ server.server_password }}">
+                                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="server_password">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="form-text">Leave blank for no password</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="rcon_password" class="form-label">RCON Password</label>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="rcon_password" name="rcon_password" value="{{ server.rcon_password }}">
+                                                    <button class="btn btn-outline-secondary toggle-password" type="button" data-target="rcon_password">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-grid">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="bi bi-save me-2"></i>Update Passwords
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header bg-dark">
+                                        <h6 class="mb-0"><i class="bi bi-hdd-network me-2"></i>Port Configuration</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Service</th>
+                                                        <th>Port</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>Game Port</td>
+                                                        <td><span class="badge bg-primary">{{ server.port }}</span></td>
+                                                        <td><span class="badge bg-success">Open</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Query Port</td>
+                                                        <td><span class="badge bg-primary">{{ server.query_port }}</span></td>
+                                                        <td><span class="badge bg-success">Open</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>RCON Port</td>
+                                                        <td><span class="badge bg-primary">{{ server.rcon_port }}</span></td>
+                                                        <td><span class="badge bg-success">Open</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="alert alert-info" role="alert">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            Ports are automatically configured in the firewall. No additional setup required.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- End Security Tab -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Toggle password visibility
+            document.querySelectorAll('.toggle-password').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                    input.setAttribute('type', type);
+
+                    const icon = this.querySelector('i');
+                    if (type === 'text') {
+                        icon.classList.remove('bi-eye');
+                        icon.classList.add('bi-eye-slash');
+                    } else {
+                        icon.classList.remove('bi-eye-slash');
+                        icon.classList.add('bi-eye');
+                    }
+                });
+            });
+
+            // Handle auto-restart schedule type changes
+            const restartSchedule = document.getElementById('restart_schedule');
+            if (restartSchedule) {
+                restartSchedule.addEventListener('change', function () {
+                    document.querySelectorAll('.schedule-options').forEach(element => {
+                        element.classList.add('d-none');
+                    });
+
+                    const selectedOption = this.value;
+                    document.getElementById(`${selectedOption}-options`).classList.remove('d-none');
+                });
+            }
+
+            // Backup schedule type selector
+            const backupScheduleType = document.getElementById('backup_schedule_type');
+            if (backupScheduleType) {
+                backupScheduleType.addEventListener('change', function () {
+                    document.querySelectorAll('.schedule-option').forEach(el => el.classList.add('d-none'));
+                    document.getElementById(`${this.value}-schedule`).classList.remove('d-none');
+                });
+            }
+
+            // Back button functionality
+            const backToAwsConfig = document.getElementById('back-to-aws-config');
+            if (backToAwsConfig) {
+                backToAwsConfig.addEventListener('click', function () {
+                    document.getElementById('aws-config-step').classList.remove('d-none');
+                    document.getElementById('backup-settings-step').classList.add('d-none');
+
+                    // Update step indicator
+                    const steps = document.querySelectorAll('.step');
+                    steps[0].classList.add('active');
+                    steps[0].classList.remove('completed');
+                    steps[1].classList.remove('active');
+                });
+            }
+
+            // Form validation
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    // Properly format cron expressions
+                    const cronInput = this.querySelector('input[name="cron_expression"]');
+                    if (cronInput && cronInput.value) {
+                        // Normalize spaces in cron expression
+                        cronInput.value = cronInput.value.trim().split(/\s+/).join(' ');
+
+                        // Validate cron has 5 parts
+                        const parts = cronInput.value.split(' ');
+                        if (parts.length !== 5) {
+                            e.preventDefault();
+                            alert('Invalid cron expression format. Must have 5 space-separated values.');
+                            return false;
+                        }
+                    }
+
+                    // Trim whitespace from all inputs
+                    this.querySelectorAll('input[type="text"]').forEach(input => {
+                        input.value = input.value.trim();
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
